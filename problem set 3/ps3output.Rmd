@@ -1,0 +1,235 @@
+---
+title: "Economics C142, Problem Set 3"
+author: "Vinay Maruri"
+date: "February 14, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#starting libraries.
+library(dplyr)
+library(ggplot2)
+library(magrittr)
+library(reshape2)
+library(stargazer)
+library(lubridate)
+library(lmtest)
+library(ivpack)
+library(kableExtra)
+```
+```{r}
+#importing data
+data_raw <- read.csv("/Users/EndlessWormhole/Desktop/Spring 2019/Econ C142/problem set 3/ovb.csv")
+```
+
+```{r}
+#split the data into male and female groups.
+female <- data_raw %>% dplyr::filter(female == 1)
+male <- data_raw %>% dplyr::filter(female == 0)
+```
+
+```{r}
+#running model 1: constant, immigrant status on logwage. 
+#first females
+model1female <- lm(logwage ~ imm, data = female)
+```
+
+```{r}
+#next model 1 for males
+model1male <- lm(logwage ~ imm, data = male)
+```
+
+```{r}
+#the next model we will run is model 2: constant and education on logwage
+#first females again
+model2female <- lm(logwage ~ educ, data = female)
+```
+```{r}
+#then males again
+model2male <- lm(logwage ~ educ, data = male)
+```
+
+```{r}
+#now we run model 3: constant and education on immigrant status.
+#first females
+model3female <- lm(imm ~ educ, data = female)
+```
+
+```{r}
+#then males
+model3male <- lm(imm ~ educ, data = male)
+```
+
+```{r}
+#next we will run model 4: constant and immmigrant status on education
+#first females
+model4female <- lm(educ ~ imm, data = female)
+```
+
+```{r}
+#then males
+model4male <- lm(educ ~ imm, data = male)
+```
+
+```{r}
+#finally we will run model 5: constant, immigrant status, and education on logwage
+#first females
+model5female <- lm(logwage ~ educ + imm, data = female)
+```
+
+```{r}
+#then males
+model5male <- lm(logwage ~ educ + imm, data = male)
+```
+
+```{r}
+#I am choosing to report my output in a stargazer table for conciseness of code and the submission document. Also I think it 
+#reports the coefficients and assorted test statistics more nicely.
+#females first.
+stargazer(model1female, 
+          model2female, 
+          model3female, 
+          model4female, 
+          model5female, 
+          title = "Estimation of the 5 models specified in Question 2(a) for Females", 
+          align = TRUE, 
+          dep.var.labels = c("logwage", "immigrant", "education"), 
+          covariate.labels = c("immigrant", "education"), 
+          omit.stat = c("ll"),
+          column.sep.width = '0.1pt',
+          no.space = TRUE, 
+          single.row = TRUE, 
+          multicolumn = F, 
+          header = F, 
+          font.size = "tiny")
+```
+
+```{r}
+#males next.
+stargazer(model1male, 
+          model2male, 
+          model3male, 
+          model4male, 
+          model5male, 
+          title = "Estimation of the 5 models specified in Question 2(a) for Males", 
+          align = TRUE, 
+          dep.var.labels = c("logwage", "immigrant", "education"), 
+          covariate.labels = c("immigrant", "education"), 
+          omit.stat = c("ll"),
+          column.sep.width = '0.1pt',
+          no.space = TRUE, 
+          single.row = TRUE, 
+          multicolumn = F, 
+          header = F, 
+          font.size = "tiny")
+```
+
+```{r}
+#we generate a split of the data that creates new variables for asian, hispanic, and other male immigrants.
+ovb_split_race_male <- data_raw %>% mutate(
+  asiani = as.numeric(asian == 1 & imm == 1 & hispanic == 0 & black == 0), 
+  hispanici = as.numeric(asian==0 & hispanic == 1 & black == 0 & imm == 1),
+  otheri = as.numeric(asian == 0 & hispanic == 0 & black == 1 & imm == 1)) %>% dplyr::filter(female == 0)
+```
+
+```{r}
+#we then do the same for female immigrants.
+ovb_split_race_female <- data_raw %>% mutate(
+  asiani = as.numeric(asian == 1 & imm == 1 & hispanic == 0 & black == 0), 
+  hispanici = as.numeric(asian==0 & hispanic == 1 & black == 0 & imm == 1),
+  otheri = as.numeric(asian == 0 & hispanic == 0 & black == 1 & imm == 1)) %>% dplyr::filter(female == 1)
+```
+
+```{r}
+#now we re-do the models using the 3 new variables. 
+#first, we do model 1: constant and immigrant status on logwage. 
+#first females.
+model1immfemale <- lm(logwage ~ asiani + hispanici + otheri, data = ovb_split_race_female)
+#next males
+model1immmale <- lm(logwage ~ asiani + hispanici + otheri, data = ovb_split_race_male)
+```
+
+
+```{r}
+#second, we do model 2: constant and education on logwage
+#first females.
+model2immfemale <- lm(logwage ~ educ + asiani + hispanici + otheri, data = ovb_split_race_female)
+#next males.
+model2immmale <- lm(logwage ~ educ + asiani + hispanici + otheri, data = ovb_split_race_male)
+```
+
+
+```{r}
+#third, we do model 3: constant and education on immigrant status
+#first females
+model3immfemale <- lm(imm ~ educ + asiani + hispanici + otheri, data = ovb_split_race_female)
+#then males.
+model3immmale <- lm(imm ~ educ + asiani + hispanici + otheri, data = ovb_split_race_male)
+```
+
+
+```{r}
+#fourth we do model 4: constant and immigrant status on education
+#first females 
+model4immfemale <- lm(educ ~ asiani + hispanici + otheri, data = ovb_split_race_female)
+#next males
+model4immmale <- lm(educ ~ asiani + hispanici + otheri, data = ovb_split_race_male)
+```
+
+
+```{r}
+#finally we do model 5: constant, education and immigrant status on logwage
+#first females 
+model5immfemale <- lm(logwage ~ asiani + hispanici + otheri + educ, data = ovb_split_race_female)
+#next males
+model5immmale <- lm(logwage ~ asiani + hispanici + otheri + educ, data = ovb_split_race_male)
+```
+
+
+```{r}
+#I report the results of this new class of models here. 
+#first males.
+stargazer(model1immmale, 
+          model2immmale, 
+          model3immmale, 
+          model4immmale, 
+          model5immmale, 
+          title = "Estimation of the 5 new models specified in Question 2(c) for Males", 
+          align = TRUE, 
+          dep.var.labels = c("logwage", "immigrant", "education"), 
+          covariate.labels = c("immigrant", "education", "asianimmigrant", "hispanicimmigrant", "otherimmigrant"), 
+          omit.stat = c("ll"),
+          column.sep.width = '0.1pt',
+          no.space = TRUE, 
+          single.row = TRUE, 
+          multicolumn = F, 
+          header = F, 
+          font.size = "tiny")
+```
+
+
+```{r}
+#next females.
+#first males.
+stargazer(model1immfemale, 
+          model2immfemale, 
+          model3immfemale, 
+          model4immfemale, 
+          model5immfemale, 
+          title = "Estimation of the 5 new models specified in Question 2(c) for Females", 
+          align = TRUE, 
+          dep.var.labels = c("logwage", "immigrant", "education"), 
+          covariate.labels = c("immigrant", "education", "asianimmigrant", "hispanicimmigrant", "otherimmigrant"), 
+          omit.stat = c("ll"),
+          column.sep.width = '0.1pt',
+          no.space = TRUE, 
+          single.row = TRUE, 
+          multicolumn = F, 
+          header = F, 
+          font.size = "tiny")
+```
+
